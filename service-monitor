@@ -1,0 +1,27 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  annotations:
+    meta.helm.sh/release-name: loki
+    meta.helm.sh/release-namespace: monitoring
+  labels:
+    app: loki
+    app.kubernetes.io/managed-by: Helm
+    chart: loki-0.31.0
+    heritage: Helm
+    release: prometheus
+  name: loki
+  namespace: monitoring
+spec:
+  endpoints:
+  - path: /metrics
+    port: http-metrics
+    scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+    - monitoring
+  selector:
+    matchLabels:
+      app: loki
+      release: loki
+      variant: headless
