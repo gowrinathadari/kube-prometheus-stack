@@ -1,0 +1,82 @@
+image:
+  repository: grafana/loki
+  tag: 2.2.0
+  pullPolicy: IfNotPresent
+
+resources:
+  limits:
+    cpu: 800m
+    memory: 3Gi
+  requests:
+    cpu: 200m
+    memory: 2.5Gi
+
+config:
+  auth_enabled: false
+  limits_config:
+    enforce_metric_name: false
+    reject_old_samples: true
+    reject_old_samples_max_age: 240h
+  schema_config:
+    configs:
+    - from: 2020-10-24
+      store: boltdb-shipper
+      object_store: filesystem
+      schema: v11
+      index:
+        prefix: index_
+        period: 24h
+  table_manager:
+    retention_deletes_enabled: true
+    # retention time= 1440/24=60days. retention_period should be multiple of period
+    retention_period: 1440h
+
+
+livenessProbe:
+  httpGet:
+    path: /ready
+    port: http-metrics
+  initialDelaySeconds: 45
+persistence:
+  enabled: true
+  # accessModes:
+  # - ReadWriteOnce
+  # size: 10Gi
+  # subPath: ""
+  existingClaim: loki-pvc
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "http-metrics"
+
+podManagementPolicy: OrderedReady
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: http-metrics
+  initialDelaySeconds: 45
+
+serviceAccount:
+  create: true
+rbac:
+  create: true
+  pspEnabled: false
+ 
+serviceMonitor:
+  enabled: false
+  scrapeTimeout: 10s
+
+securityContext:
+  runAsGroup: 0
+  runAsNonRoot: false
+  runAsUser: 0
+
+affinity: 
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: eks.amazonaws.com/capacityType
+          operator: In
+          values:
+          - ON_DEMAND
